@@ -1,0 +1,50 @@
+#compute cosign similarities tf idf
+from sklearn.metrics.pairwise import linear_kernel
+#change the indices to match the document index you want to compare to
+cosine_similarities = linear_kernel(X_train_text[5426:5427], X_train_text).flatten()
+cosine_similarities
+
+
+related_docs_indices = cosine_similarities.argsort()[:-7:-1]
+related_docs_indices
+fulldata.loc[related_docs_indices,"bill_number"]
+
+#compute cosign similarities word-to-vec’
+
+from gensim.models import Word2Vec
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+tokenized_docs = [doc.lower().split() for doc in fulldata["text"]]
+model = Word2Vec(tokenized_docs, min_count=1, vector_size=100)
+
+def get_doc_vector(doc, model):
+    doc_vector = np.zeros(model.vector_size)
+    word_count = 0
+    for word in doc:
+        if word in model.wv:
+            doc_vector += model.wv[word]
+            word_count += 1
+    if word_count != 0:
+        return doc_vector / word_count
+    else:
+        return np.zeros(model.vector_size)
+
+doc_vectors = [get_doc_vector(doc, model) for doc in tokenized_docs]
+
+
+from numpy import dot
+from numpy.linalg import norm
+
+omni = doc_vectors[5246]
+sims = []
+def compute_cosin(x,omni):
+    cos_sim = dot(x,omni)/(norm(x)*norm(omni))
+    return cos_sim
+for x in doc_vectors:
+    sim = compute_cosin(x,omni)
+    sims.append(sim)
+
+related_docs_indices = np.array(sims).argsort()[:-21:-1]
+related_docs_indices
+
+fulldata.loc[related_docs_indices,"bill_number"]
